@@ -6,7 +6,7 @@ import { TrainingMode } from "./features/training/TrainingMode";
 import { crewApi, type CrewProfile } from "./lib/crewApi";
 import "./App.css";
 
-type Screen = "home" | "course" | "ranked" | "training" | "profile";
+type Screen = "home" | "fiches" | "official" | "final" | "ranked" | "training" | "profile";
 type AuthMode = "register" | "login";
 type IdentityProfile = {
   id: string;
@@ -50,6 +50,7 @@ function fallbackProfile(identity: IdentityProfile): CrewProfile {
     leaderboard_opt_in: false,
     ranked_points: 100,
     ranked_matches: 0,
+    achievements: [],
   };
 }
 
@@ -77,6 +78,25 @@ function App() {
         : "Apprends les bons réflexes, dans le bon ordre.",
     [profile],
   );
+  const achievementCodes = profile?.achievements ?? [];
+  const achievements = profile
+    ? [
+        { code: "first_quiz", title: "Premier pas", detail: "Termine un quiz.", unlocked: achievementCodes.includes("first_quiz") },
+        { code: "reader", title: "Tout lu", detail: "Ouvre les 17 fiches officielles.", unlocked: achievementCodes.includes("reader") },
+        { code: "strong_official", title: "Bien préparé", detail: "Atteins 80 % au quiz officiel.", unlocked: achievementCodes.includes("strong_official") },
+        { code: "perfect_quiz", title: "Sans faute", detail: "Obtiens 100 % sur un quiz.", unlocked: achievementCodes.includes("perfect_quiz") },
+        { code: "final_pass", title: "Validé", detail: "Réussis le test final.", unlocked: achievementCodes.includes("final_pass") },
+      ]
+    : [];
+  const nextStep = !profile
+    ? { screen: "fiches" as const, eyebrow: "Pour commencer", title: "Lis les fiches officielles.", detail: "17 situations concrètes avant de passer aux quiz.", action: "Découvrir les fiches" }
+    : profile.seen_official.length < 17
+      ? { screen: "fiches" as const, eyebrow: "Ta prochaine étape", title: "Continue les fiches officielles.", detail: `${profile.seen_official.length} sur 17 déjà consultée${profile.seen_official.length > 1 ? "s" : ""}.`, action: "Continuer les fiches" }
+      : profile.best_official < 80
+        ? { screen: "official" as const, eyebrow: "Ta prochaine étape", title: "Passe le quiz officiel.", detail: "10 questions pour vérifier que les repères sont acquis.", action: "Lancer le quiz" }
+        : profile.passed_finals < 1
+          ? { screen: "final" as const, eyebrow: "Ta prochaine étape", title: "Tente le test final.", detail: "5 questions essentielles pour valider tes acquis.", action: "Ouvrir le test final" }
+          : { screen: "training" as const, eyebrow: "Continue à progresser", title: "Change de situation avec Entraînement+.", detail: "12 situations aléatoires, sans risque pour ton classement.", action: "Lancer Entraînement+" };
 
   function updateProfile(next: CrewProfile) {
     sessionStorage.setItem("rgrv-profile", JSON.stringify(next));
@@ -146,6 +166,10 @@ function App() {
     if (profile) setScreen(destination);
     else setAuthOpen(true);
   }
+  function goTo(destination: Screen) {
+    if (destination === "home") setScreen(destination);
+    else requireProfile(destination);
+  }
   function logout() {
     sessionStorage.removeItem("rgrv-profile");
     sessionStorage.removeItem("rgrv-profile-id");
@@ -169,146 +193,52 @@ function App() {
           </span>
         </button>
         <nav aria-label="Navigation principale">
-          <button
-            className={screen === "home" ? "active" : ""}
-            onClick={() => setScreen("home")}
-          >
-            Mon parcours
-          </button>
+          <button className={screen === "home" ? "active" : ""} onClick={() => goTo("home")}>Accueil</button>
+          <button className={screen === "fiches" ? "active" : ""} onClick={() => goTo("fiches")}>Fiches</button>
+          <button className={screen === "official" ? "active" : ""} onClick={() => goTo("official")}>Quiz officiel</button>
+          <button className={screen === "final" ? "active" : ""} onClick={() => goTo("final")}>Test final</button>
           <button
             className={screen === "ranked" ? "active" : ""}
-            onClick={() => requireProfile("ranked")}
+            onClick={() => goTo("ranked")}
           >
-            Défi classé
+            Classé
           </button>
           <button
             className={screen === "training" ? "active" : ""}
-            onClick={() => requireProfile("training")}
+            onClick={() => goTo("training")}
           >
             Entraînement+
           </button>
           <button
             className={screen === "profile" ? "active" : ""}
-            onClick={() => requireProfile("profile")}
+            onClick={() => goTo("profile")}
           >
             Mon profil
           </button>
         </nav>
-        <button
-          className="level"
-          type="button"
-          onClick={() => requireProfile("profile")}
-        >
-          {profile ? `Niv. ${profile.level}` : "Se connecter"}
-        </button>
+        {profile ? <button className="level" type="button" onClick={() => goTo("profile")}>Profil · Niv. {profile.level}</button> : <span className="topbar-spacer" aria-hidden="true" />}
       </header>
 
       {screen === "home" && (
         <section className="home-page">
-          <div className="hero-grid">
-            <div>
-              <p className="eyebrow">
-                {profile ? "Ton parcours continue" : "Formation crew"}
-              </p>
-              <h1>{welcome}</h1>
-              <p className="lead">
-                Commence par les fiches officielles. Le quiz et le test final
-                permettent ensuite de vérifier que tout est acquis.
-              </p>
-              <button
-                className="primary"
-                onClick={() => requireProfile("course")}
-              >
-                {profile
-                  ? "Reprendre mon parcours"
-                  : "Entrer dans mon parcours"}{" "}
-                <span>→</span>
-              </button>
-            </div>
-            <aside className="next-step">
-              <small>Ta prochaine étape</small>
-              <h2>
-                {profile && profile.seen_official.length
-                  ? "02 — Continuer les fiches"
-                  : "01 — Lire les fiches"}
-              </h2>
-              <p>
-                {profile
-                  ? `${profile.seen_official.length} fiche${profile.seen_official.length > 1 ? "s" : ""} consultée${profile.seen_official.length > 1 ? "s" : ""} sur 17.`
-                  : "17 repères essentiels avant de passer au quiz officiel."}
-              </p>
-            </aside>
+          <div className="home-intro">
+            {profile ? <><p className="eyebrow">RGRV Crew Training</p><h1>{welcome}</h1><p className="lead">Poursuis ta préparation, un point à la fois.</p></> : <><p className="eyebrow">Test RGRV · vendredi</p><h1>Sois prêt pour le RGRV.</h1><p className="lead">Révise l’essentiel et entraîne-toi avant le test.</p><button className="primary hero-login" onClick={() => setAuthOpen(true)}>Se connecter <span>→</span></button></>}
           </div>
-          <section className="featured-fiches">
-            <div>
-              <p className="eyebrow">À lire avant les quiz</p>
-              <h2>Les 17 fiches officielles.</h2>
-              <p>
-                Des situations concrètes, une réponse attendue et les repères
-                utiles du restaurant. C’est la base du parcours.
-              </p>
-            </div>
-            <div className="featured-fiches-action">
-              <span>{profile ? `${profile.seen_official.length} / 17 lues` : "17 à découvrir"}</span>
-              <button className="primary" onClick={() => requireProfile("course")}>
-                Lire les fiches <span>→</span>
-              </button>
-            </div>
-          </section>
-          <section className="ranked-strip">
-            <div>
-              <p className="eyebrow">Défi classé · toujours disponible</p>
-              <h2>
-                {profile
-                  ? "Rejoue pour monter dans le classement."
-                  : "Une raison de revenir et de progresser."}
-              </h2>
-            </div>
-            <button
-              className="ranked-action"
-              onClick={() => requireProfile("ranked")}
-            >
-              <small>Classement crew</small>
-              <strong>{profile ? "Voir mon défi →" : "Découvrir →"}</strong>
-            </button>
-          </section>
-          <div className="section-heading">
-            <h2>Ton parcours RGRV</h2>
-            <span>
-              {profile
-                ? `${profile.xp} XP · niveau ${profile.level}`
-                : "4 étapes, un parcours clair"}
-            </span>
-          </div>
-          <div className="path">
-            <article className="path-step current">
-              <b>01</b>
-              <h3>Fiches officielles</h3>
-              <p>17 situations à connaître.</p>
-            </article>
-            <article className="path-step">
-              <b>02</b>
-              <h3>Quiz officiel</h3>
-              <p>10 questions à chaque passage.</p>
-            </article>
-            <article className="path-step">
-              <b>03</b>
-              <h3>Test final</h3>
-              <p>Valide tes acquis.</p>
-            </article>
-            <article className="path-step">
-              <b>04</b>
-              <h3>Entraînement+</h3>
-              <p>36 questions, 12 à chaque tour.</p>
-            </article>
-          </div>
+          {profile && <section className="next-activity">
+            <div><p className="eyebrow">{nextStep.eyebrow}</p><h2>{nextStep.title}</h2><p>{nextStep.detail}</p></div>
+            <button className="primary" onClick={() => goTo(nextStep.screen)}>{nextStep.action} <span>→</span></button>
+          </section>}
+          {profile && <section className="crew-challenges">
+            <div className="challenge-heading"><div><p className="eyebrow">Défis du crew</p><h2>Quelques objectifs qui comptent.</h2></div><span>{achievements.filter((achievement) => achievement.unlocked).length} / {achievements.length} validés</span></div>
+            <div className="achievement-list">{achievements.map((achievement) => <article className={achievement.unlocked ? "achievement unlocked" : "achievement"} key={achievement.code}><b>{achievement.unlocked ? "✓" : "○"}</b><div><strong>{achievement.title}</strong><p>{achievement.detail}</p></div>{achievement.unlocked && <small>Validé</small>}</article>)}</div>
+          </section>}
         </section>
       )}
 
-      {screen === "course" && profile && (
-        <Course profile={profile} onProfileUpdated={updateProfile} />
+      {(["fiches", "official", "final"] as const).includes(screen as "fiches" | "official" | "final") && profile && (
+        <Course key={screen} profile={profile} section={screen as "fiches" | "official" | "final"} onNavigate={goTo} onProfileUpdated={updateProfile} />
       )}
-      {screen === "training" && profile && <TrainingMode onProfileUpdated={updateProfile} onOpenFiches={() => setScreen("course")} />}
+      {screen === "training" && profile && <TrainingMode onProfileUpdated={updateProfile} onOpenFiches={() => goTo("fiches")} />}
       {screen === "ranked" && profile && <RankedMode profile={profile} onProfileUpdated={updateProfile} />}
       {screen === "profile" && profile && (
         <section className="content-page">
@@ -338,14 +268,22 @@ function App() {
               {profile.passed_finals > 1 ? "s" : ""} final
             </span>
           </div>
-          <button className="primary" onClick={() => setScreen("course")}>
-            Continuer le parcours <span>→</span>
+          <button className="primary" onClick={() => goTo("fiches")}>
+            Ouvrir les fiches <span>→</span>
           </button>
           <button className="text-action" onClick={logout}>
             Se déconnecter sur cet appareil
           </button>
         </section>
       )}
+
+      <nav className="mobile-nav" aria-label="Navigation mobile">
+        <button className={screen === "home" ? "active" : ""} onClick={() => goTo("home")}><span>⌂</span>Accueil</button>
+        <button className={screen === "fiches" ? "active" : ""} onClick={() => goTo("fiches")}><span>▤</span>Fiches</button>
+        <button className={screen === "official" ? "active" : ""} onClick={() => goTo("official")}><span>✓</span>Quiz</button>
+        <button className={screen === "training" ? "active" : ""} onClick={() => goTo("training")}><span>↻</span>Training+</button>
+        <button className={screen === "ranked" ? "active" : ""} onClick={() => goTo("ranked")}><span>★</span>Classé</button>
+      </nav>
 
       {authOpen && (
         <div className="modal-layer" role="presentation">
@@ -439,6 +377,8 @@ function App() {
           </section>
         </div>
       )}
+
+      <footer className="site-footer">Pensé et créé pour l’équipe par <strong>Steve</strong></footer>
     </main>
   );
 }

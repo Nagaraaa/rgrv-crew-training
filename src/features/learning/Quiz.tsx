@@ -30,7 +30,6 @@ export function Quiz({ title, questions, questionCount, mode, onProfileUpdated }
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const current = roundQuestions[index]
   const options = useMemo(() => shuffle([current.correct, ...current.wrong]), [current])
-  const correct = selected === current.correct
 
   async function finish() {
     setSubmitting(true)
@@ -47,7 +46,6 @@ export function Quiz({ title, questions, questionCount, mode, onProfileUpdated }
   }
 
   function choose(option: string) {
-    if (selected) return
     setSelected(option)
     setAnswers((currentAnswers) => ({ ...currentAnswers, [current.id]: option }))
   }
@@ -67,8 +65,8 @@ export function Quiz({ title, questions, questionCount, mode, onProfileUpdated }
   return <section className="quiz-panel">
     <div className="quiz-meta"><span>{title}</span><span>{index + 1} / {roundQuestions.length}</span></div>
     <h2>{current.question}</h2>
-    <div className="options">{options.map((option) => <button className={selected ? option === current.correct ? 'option good' : option === selected ? 'option bad' : 'option' : 'option'} onClick={() => choose(option)} disabled={Boolean(selected)} key={option}>{option}</button>)}</div>
-    {selected && <div className={correct ? 'feedback correct' : 'feedback'}><b>{correct ? 'Bonne réponse' : 'À retenir'}</b><p>{current.explanation}</p>{current.image && <figure className="quiz-location-sign"><img src={current.image} alt="Panneau vert indiquant le point de rassemblement, avec quatre flèches orientées vers un groupe de personnes." /><figcaption>Le point de rassemblement est situé près de ce panneau vert, à côté des bornes de recharge.</figcaption></figure>}</div>}
+    {current.image && <figure className="quiz-location-sign"><img src={current.image} alt="Panneau vert indiquant le point de rassemblement, avec quatre flèches orientées vers un groupe de personnes." /><figcaption>Le point de rassemblement est situé près de ce panneau vert, à côté des bornes de recharge.</figcaption></figure>}
+    <div className="options">{options.map((option) => <button className={option === selected ? 'option selected' : 'option'} onClick={() => choose(option)} aria-pressed={option === selected} key={option}>{option === current.correct ? current.correctDisplay ?? option : option}</button>)}</div>
     <button className="primary" disabled={!selected || submitting} onClick={advance}>{submitting ? 'Enregistrement…' : index === roundQuestions.length - 1 ? 'Voir mon résultat' : 'Question suivante'} <span>→</span></button>
   </section>
 }

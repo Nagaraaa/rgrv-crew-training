@@ -12,6 +12,7 @@ export type CrewProfile = {
   leaderboard_opt_in: boolean
   ranked_points: number
   ranked_matches: number
+  achievements: string[]
 }
 
 type ProgressProfile = Pick<CrewProfile, 'xp' | 'level' | 'total_attempts' | 'best_official' | 'best_training' | 'passed_finals' | 'perfect_runs'>

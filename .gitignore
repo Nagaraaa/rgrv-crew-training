@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 .env*.local
+.env.admin.local
+__pycache__/
 .temp
 supabase/.temp
 

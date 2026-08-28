@@ -20,8 +20,9 @@ async function authenticate(body: Record<string, unknown>) {
   return data
 }
 
-function publicProfile(profile: Record<string, unknown>) {
-  return { id: profile.id, username: profile.username, leaderboard_opt_in: profile.leaderboard_opt_in, xp: profile.xp, level: profile.level, best_official: profile.best_official, best_training: profile.best_training, total_attempts: profile.total_attempts, passed_finals: profile.passed_finals, perfect_runs: profile.perfect_runs, seen_official: profile.seen_official ?? [], ranked_points: profile.ranked_points, ranked_matches: profile.ranked_matches }
+async function publicProfile(profile: Record<string, unknown>) {
+  const { data } = await db.from('user_achievements').select('achievement_code').eq('profile_id', profile.id)
+  return { id: profile.id, username: profile.username, leaderboard_opt_in: profile.leaderboard_opt_in, xp: profile.xp, level: profile.level, best_official: profile.best_official, best_training: profile.best_training, total_attempts: profile.total_attempts, passed_finals: profile.passed_finals, perfect_runs: profile.perfect_runs, seen_official: profile.seen_official ?? [], ranked_points: profile.ranked_points, ranked_matches: profile.ranked_matches, achievements: (data ?? []).map((achievement) => achievement.achievement_code) }
 }
 
 async function awardAchievements(profile: Record<string, any>) {
@@ -54,7 +55,7 @@ async function profile(body: Record<string, unknown>, origin: string | null) {
   const current = await authenticate(body)
   if (!current) return json({ error: 'Session invalide.' }, origin, 401)
   await awardAchievements(current)
-  return json({ profile: publicProfile(current) }, origin)
+  return json({ profile: await publicProfile(current) }, origin)
 }
 
 async function updateProfile(body: Record<string, unknown>, origin: string | null) {
@@ -62,7 +63,7 @@ async function updateProfile(body: Record<string, unknown>, origin: string | nul
   if (!current) return json({ error: 'Session invalide.' }, origin, 401)
   const { data, error } = await db.from('crew_profiles').update({ leaderboard_opt_in: Boolean(body.leaderboard_opt_in), updated_at: new Date().toISOString() }).eq('id', current.id).select('*').single()
   if (error || !data) return json({ error: 'Mise à jour impossible.' }, origin, 500)
-  return json({ profile: publicProfile(data) }, origin)
+  return json({ profile: await publicProfile(data) }, origin)
 }
 
 async function markSeen(body: Record<string, unknown>, origin: string | null) {
@@ -99,7 +100,7 @@ async function submitAttempt(body: Record<string, unknown>, origin: string | nul
   const { data, error } = await db.from('crew_profiles').update(patch).eq('id', current.id).select('*').single()
   if (error || !data) return json({ error: 'Résultat enregistré, profil non mis à jour.' }, origin, 500)
   await awardAchievements(data)
-  return json({ ...result, passed, xp_awarded, xp_capped, ...(mode === 'ranked' ? { ranked_delta, ranked_points } : {}), profile: publicProfile(data) }, origin)
+  return json({ ...result, passed, xp_awarded, xp_capped, ...(mode === 'ranked' ? { ranked_delta, ranked_points } : {}), profile: await publicProfile(data) }, origin)
 }
 
 async function leaderboard(body: Record<string, unknown>, origin: string | null) {

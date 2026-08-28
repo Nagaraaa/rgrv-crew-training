@@ -31,3 +31,15 @@ Le profil affiché dans le classement est toujours sous la forme « Prénom I. �
 ## Vérification distante
 
 `node scripts/verify-remote.mjs` crée un profil temporaire, vérifie l’identité, une fiche et un quiz, puis affiche le résultat. Supprimer ensuite ce profil de test dans Supabase (la procédure de livraison l’a déjà fait).
+
+## Voir les comptes, localement
+
+Un petit outil de lecture seule est disponible dans `tools/admin_accounts.py`. Il n'affiche que le profil, la date de création et les statistiques de progression ; les PIN et jetons ne sont jamais demandés ni affichés.
+
+1. Copier `tools/.env.admin.example` vers `.env.admin.local`.
+2. Dans Supabase, ouvrir **Settings > API Keys**, puis copier une **Secret key** (ou la clé `service_role` historique) dans `SUPABASE_SECRET_KEY`. Ne jamais mettre cette clé dans le projet web ou la partager.
+3. Double-cliquer sur `tools/voir-comptes.cmd`, ou lancer `py tools/admin_accounts.py` depuis le dossier `app`.
+
+Un raccourci bureau **RGRV - Voir les comptes** peut être utilisé pour ouvrir directement l'outil. Le lanceur configure automatiquement l'encodage UTF-8 afin que les accents restent lisibles dans la console Windows.
+
+Le fichier `.env.admin.local` est ignoré par Git. Ajouter `--json` à la commande pour obtenir une sortie exploitable dans un autre outil.
