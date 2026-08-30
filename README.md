@@ -1,56 +1,163 @@
-# RGRV Crew Training
+# 🍟 Crew Hub — Waterloo Beta
 
-Application interne de formation RGRV, reconstruite avec React, TypeScript et Vite.
+> Une application interne, pensée d’abord pour mobile, pour rassembler l’équipe, les tâches du restaurant et le module annuel RGRV.
 
-## Démarrer
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ecf8e?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Production-000000?logo=vercel&logoColor=white)](https://rgrv-crew-training.vercel.app)
+
+🔗 **Application en ligne :** [rgrv-crew-training.vercel.app](https://rgrv-crew-training.vercel.app)
+
+---
+
+## ✨ À quoi sert Crew Hub ?
+
+| Espace | Utilité |
+| --- | --- |
+| ✅ **Tâches** | Créer, proposer, accepter, prendre en charge et clôturer les actions de l’équipe. |
+| 👥 **Équipe** | Voir l’organisation du Store et les rôles de chacun, avec un historique des changements. |
+| 📚 **RGRV** | Réviser les fiches, lancer les quiz, le test final et l’Entraînement+. |
+| 🏆 **Classé** | Progresser dans un classement RGRV volontaire, séparé des tâches du restaurant. |
+| 👤 **Profil** | Retrouver sa progression et ses informations personnelles. |
+
+L’application ne remplace pas WhatsApp : WhatsApp reste parfait pour les échanges rapides et les photos. Crew Hub apporte une **vue structurée**, sans devoir remonter l’historique d’une conversation pour retrouver une tâche ou un responsable.
+
+---
+
+## 🧭 Rôles et accès
+
+| Rôle | Ce qu’il peut faire |
+| --- | --- |
+| 🟢 **Crew** | Consulter l’équipe, prendre une tâche validée et proposer une nouvelle tâche à faire valider. |
+| 🧑‍🏫 **Crew Trainer** | Même accès opérationnel que le Crew, avec une place claire dans la hiérarchie. |
+| 🟡 **Manager** | Créer des tâches et catégories, puis accepter ou refuser les propositions. |
+| 🟠 **1er Assistant** | Gérer les tâches et promouvoir un Crew en Manager. |
+| 🔴 **Store Manager** | Gérer les tâches et l’ensemble des rôles administrables. |
+
+Les autorisations sont vérifiées côté serveur : modifier l’interface ne donne pas de droits supplémentaires.
+
+---
+
+## 📱 Logique des tâches
+
+- Pas d’échéance artificielle à saisir : la date et l’heure de **création** sont enregistrées automatiquement.
+- Lorsqu’une tâche est clôturée, l’application conserve aussi la date et l’heure de **finalisation**.
+- Un Crew propose une tâche ; un Manager, 1er Assistant ou Store Manager peut l’accepter ou la refuser.
+- La prise en charge et la clôture sont atomiques : deux personnes ne peuvent pas s’attribuer la même tâche en même temps.
+- Une petite confirmation remercie la personne qui vient de terminer une tâche. ✨
+
+---
+
+## 🛠️ Lancer le projet en local
+
+### Prérequis
+
+- Node.js récent (LTS recommandé)
+- Un projet Supabase configuré pour les Edge Functions
+
+### Installation
 
 ```powershell
 npm install
 npm run dev
 ```
 
-Copier `.env.example` vers `.env` si nécessaire. Les deux URLs configurées sont publiques : elles ne contiennent aucune clé secrète.
+Puis ouvrir l’adresse indiquée par Vite, généralement `http://localhost:5173`.
+
+### Variables d’environnement front-end
+
+Créer un fichier `.env` local (il est ignoré par Git) :
+
+```dotenv
+VITE_CREW_API_URL=https://<votre-projet>.supabase.co/functions/v1/crew-api
+VITE_CREW_IDENTITY_URL=https://<votre-projet>.supabase.co/functions/v1/crew-identity
+```
+
+Ces URLs sont des points d’accès publics ; **aucune clé secrète Supabase ne doit être placée dans le front-end**.
+
+### Vérifications
 
 ```powershell
 npm run build
 npm run lint
 ```
 
-## Organisation
+---
 
-- `src/features/learning` : fiches, questions, quiz et logique du parcours.
-- `src/lib/crewApi.ts` : unique frontière entre l’interface et les Edge Functions.
-- `supabase/functions/crew-identity` : inscription et connexion par prénom, nom et PIN à 6 chiffres. Seuls des dérivés PBKDF2 du PIN sont stockés.
-- `supabase/functions/crew-api` : progression, validation serveur, XP et classement. Le serveur est l’autorité qui calcule le score et enregistre les résultats.
-- `supabase/migrations` : ajout des champs d’identité et de l’index de performance.
+## 🗂️ Architecture
 
-## Contrat de confidentialité
+```text
+src/
+├── features/
+│   ├── learning/       # Fiches, quiz et test final
+│   ├── ranked/         # Mode classé RGRV
+│   ├── training/       # Entraînement+
+│   ├── operations/     # Tâches, équipe et rôles
+│   └── rgrv/           # Hub annuel RGRV
+├── lib/crewApi.ts      # Frontière unique avec les Edge Functions
+└── App.tsx             # Navigation et session
 
-Le profil affiché dans le classement est toujours sous la forme « Prénom I. ». L’opt-in est désactivé par défaut. Les fonctions n’acceptent que l’origine locale de développement et les domaines Vercel RGRV.
+supabase/
+├── functions/
+│   ├── crew-identity/  # Inscription et connexion par prénom, nom et PIN
+│   ├── crew-api/       # Profil, XP, quiz et classement
+│   └── crew-operations/# Tâches, catégories et rôles
+└── migrations/         # Schéma et évolutions de la base
+```
 
-## Vérification distante
+---
 
-`node scripts/verify-remote.mjs` crée un profil temporaire, vérifie l’identité, une fiche et un quiz, puis affiche le résultat. Supprimer ensuite ce profil de test dans Supabase (la procédure de livraison l’a déjà fait).
+## 🔐 Sécurité et données
 
-## Voir les comptes, localement
+- Les PIN ne sont jamais stockés en clair : seuls des dérivés PBKDF2 sont conservés.
+- Les sessions utilisent un jeton dont seul le condensat est enregistré côté serveur.
+- Les scores RGRV sont calculés côté Edge Function, pas dans le navigateur.
+- Les actions sensibles — tâches, validations et rôles — sont autorisées côté serveur.
+- Les données de test et les clés d’administration restent hors de Git grâce à `.gitignore`.
 
-Un petit outil de lecture seule est disponible dans `tools/admin_accounts.py`. Il n'affiche que le profil, la date de création et les statistiques de progression ; les PIN et jetons ne sont jamais demandés ni affichés.
+### 👀 Voir les comptes localement
 
-1. Copier `tools/.env.admin.example` vers `.env.admin.local`.
-2. Dans Supabase, ouvrir **Settings > API Keys**, puis copier une **Secret key** (ou la clé `service_role` historique) dans `SUPABASE_SECRET_KEY`. Ne jamais mettre cette clé dans le projet web ou la partager.
-3. Double-cliquer sur `tools/voir-comptes.cmd`, ou lancer `py tools/admin_accounts.py` depuis le dossier `app`.
+`tools/admin_accounts.py` est un outil de lecture seule : il affiche les profils et statistiques sans révéler les PIN ou les jetons.
 
-Un raccourci bureau **RGRV - Voir les comptes** peut être utilisé pour ouvrir directement l'outil. Le lanceur configure automatiquement l'encodage UTF-8 afin que les accents restent lisibles dans la console Windows.
+1. Créer `tools/.env.admin.local` avec `SUPABASE_URL` et `SUPABASE_SECRET_KEY`.
+2. Lancer `tools/voir-comptes.cmd`, ou `py tools/admin_accounts.py`.
+3. Ajouter `--json` si une sortie exploitable est nécessaire.
 
-Le fichier `.env.admin.local` est ignoré par Git. Ajouter `--json` à la commande pour obtenir une sortie exploitable dans un autre outil.
+> 🔒 La Secret key est réservée à l’administration locale. Ne pas la copier dans `.env`, dans le code front-end ou dans une discussion.
 
-## Aperçu local : Crew Hub
+---
 
-La navigation locale contient une première version de l'espace **Tâches** et de la gestion des rôles. Elle ne lit ni n'écrit encore de tâches, de catégories ou de rôles dans Supabase : c'est volontaire, afin de valider l'usage avant toute migration de la base.
+## 🚀 Déploiement
 
-- Le RGRV est maintenant regroupé dans un module annuel dédié.
-- Les tâches utilisent une catégorie et une échéance avec date + heure sélectionnées.
-- Les Managers peuvent créer des tâches et des catégories dans l'aperçu. Le Store Manager peut attribuer les rôles Crew, Manager et 1er Assistant ; le 1er Assistant peut uniquement promouvoir un Crew en Manager.
-- En mode développement, le profil affiche un sélecteur **Aperçu local des droits**. Il ne modifie aucun compte réel.
+La production est hébergée sur Vercel et le backend sur Supabase.
 
-La version connectée nécessitera une migration Supabase, des actions serveur protégées et un journal privé des changements de rôle et de création de catégories.
+```powershell
+# Vérifier avant publication
+npm run build
+npm run lint
+
+# Production Vercel (projet déjà relié)
+npx vercel@59.9.1 --prod --yes
+```
+
+Les Edge Functions et migrations Supabase doivent être déployées avant une fonctionnalité qui dépend d’elles. Les anciens déploiements Vercel servent de point de retour si nécessaire.
+
+---
+
+## 🧪 Vérification distante
+
+Le script suivant crée un compte temporaire, vérifie l’identité, une fiche, un quiz officiel et une partie classée :
+
+```powershell
+node scripts/verify-remote.mjs
+```
+
+Supprimer ensuite le profil de test dans Supabase. Ne pas exécuter ce script sur la base de production sans prévoir ce nettoyage.
+
+---
+
+<p align="center">
+  Pensé et créé pour l’équipe Waterloo par <strong>Steve</strong> 🍟<br />
+  <sub>Beta interne · amélioration continue</sub>
+</p>
