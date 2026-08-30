@@ -80,11 +80,17 @@ async function login(request: Request, body: Record<string, unknown>) {
   const pin = validPin(body.pin);
   if ('error' in first || 'error' in last || !pin) return json(request, { error: 'Vérifie ton prénom, ton nom et ton code personnel.' }, 400);
   const identity = `${normalize(first.value)}.${normalize(last.value)}`;
+  const { count } = await db.from('identity_login_attempts').select('*', { count: 'exact', head: true }).eq('identity_normalized', identity).gte('attempted_at', new Date(Date.now() - 15 * 60_000).toISOString());
+  if ((count ?? 0) >= 5) return json(request, { error: 'Trop de tentatives. Réessaie dans quelques minutes.' }, 429);
   const { data: profile } = await db.from('crew_profiles').select('*').eq('identity_normalized', identity).maybeSingle();
-  if (!profile?.pin_salt || !profile.pin_hash || !sameValue(await pinHash(pin, profile.pin_salt), profile.pin_hash)) return json(request, { error: 'Identifiants incorrects.' }, 401);
+  if (!profile?.pin_salt || !profile.pin_hash || !sameValue(await pinHash(pin, profile.pin_salt), profile.pin_hash)) {
+    await db.from('identity_login_attempts').insert({ identity_normalized: identity });
+    return json(request, { error: 'Identifiants incorrects.' }, 401);
+  }
   const token = sessionToken();
   const { error } = await db.from('crew_profiles').update({ token_hash: await sha256(token), updated_at: new Date().toISOString() }).eq('id', profile.id);
   if (error) return json(request, { error: 'Impossible d’ouvrir la session.' }, 500);
+  await db.from('identity_login_attempts').delete().eq('identity_normalized', identity);
   return json(request, { token, profile: profilePayload(profile) });
 }
 Deno.serve(async (request) => {

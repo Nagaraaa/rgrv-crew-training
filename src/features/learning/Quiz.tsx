@@ -10,6 +10,7 @@ type Props = {
   questionCount: number
   mode: QuizMode
   onProfileUpdated: (profile: CrewProfile) => void
+  onOpenLeaderboard?: () => void
 }
 
 function shuffle<T>(items: T[]) {
@@ -21,7 +22,7 @@ function shuffle<T>(items: T[]) {
   return copy
 }
 
-export function Quiz({ title, questions, questionCount, mode, onProfileUpdated }: Props) {
+export function Quiz({ title, questions, questionCount, mode, onProfileUpdated, onOpenLeaderboard }: Props) {
   const [roundQuestions, setRoundQuestions] = useState(() => shuffle(questions).slice(0, questionCount))
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
@@ -60,7 +61,7 @@ export function Quiz({ title, questions, questionCount, mode, onProfileUpdated }
     setIndex(0); setSelected(null); setAnswers({}); setResult(null)
   }
 
-  if (result) return <section className="result-panel"><p className="eyebrow">{title}</p><div className="score-number">{result.score}%</div><h2>{result.rankedDelta === undefined ? result.score >= 80 ? 'Très solide.' : result.score >= 60 ? 'Bonne base.' : 'Encore un tour.' : result.rankedDelta > 0 ? 'Tu montes.' : result.rankedDelta < 0 ? 'Tu redescends.' : 'Tu restes stable.'}</h2>{result.rankedDelta !== undefined && <p className={result.rankedDelta > 0 ? 'ranked-result up' : result.rankedDelta < 0 ? 'ranked-result down' : 'ranked-result'}><b>{result.rankedDelta > 0 ? `+${result.rankedDelta}` : result.rankedDelta} points classés</b><span>{result.rankedPoints} points au total</span></p>}<p>{result.xp ? `+${result.xp} XP ajoutés à ton profil.` : 'La limite quotidienne d’XP est atteinte.'}{result.capped ? ' La limite quotidienne d’XP est atteinte.' : ''}</p><button className="primary" onClick={restart}>Rejouer <span>→</span></button></section>
+  if (result) return <section className="result-panel"><p className="eyebrow">{title}</p><div className="score-number">{result.score}%</div><h2>{result.rankedDelta === undefined ? result.score >= 80 ? 'Très solide.' : result.score >= 60 ? 'Bonne base.' : 'Encore un tour.' : result.rankedDelta > 0 ? 'Tu montes.' : result.rankedDelta < 0 ? 'Tu redescends.' : 'Tu restes stable.'}</h2>{result.rankedDelta !== undefined && <p className={result.rankedDelta > 0 ? 'ranked-result up' : result.rankedDelta < 0 ? 'ranked-result down' : 'ranked-result'}><b>{result.rankedDelta > 0 ? `+${result.rankedDelta}` : result.rankedDelta} points classés</b><span>{result.rankedPoints} points au total</span></p>}<p>{result.xp ? `+${result.xp} XP ajoutés à ton profil.` : 'La limite quotidienne d’XP est atteinte.'}{result.capped ? ' La limite quotidienne d’XP est atteinte.' : ''}</p><div className="result-actions"><button className="primary" onClick={restart}>Rejouer <span>→</span></button>{result.rankedDelta !== undefined && onOpenLeaderboard && <button className="text-action" type="button" onClick={onOpenLeaderboard}>Voir le classement →</button>}</div></section>
 
   return <section className="quiz-panel">
     <div className="quiz-meta"><span>{title}</span><span>{index + 1} / {roundQuestions.length}</span></div>

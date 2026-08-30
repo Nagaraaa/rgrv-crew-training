@@ -1,0 +1,9 @@
+/* Keep the beginning of a task form visible above the mobile keyboard. */
+.operations-layer {
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+.task-sheet input:focus {
+  scroll-margin-block: 24px;
+}

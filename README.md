@@ -43,3 +43,14 @@ Un petit outil de lecture seule est disponible dans `tools/admin_accounts.py`. I
 Un raccourci bureau **RGRV - Voir les comptes** peut être utilisé pour ouvrir directement l'outil. Le lanceur configure automatiquement l'encodage UTF-8 afin que les accents restent lisibles dans la console Windows.
 
 Le fichier `.env.admin.local` est ignoré par Git. Ajouter `--json` à la commande pour obtenir une sortie exploitable dans un autre outil.
+
+## Aperçu local : Crew Hub
+
+La navigation locale contient une première version de l'espace **Tâches** et de la gestion des rôles. Elle ne lit ni n'écrit encore de tâches, de catégories ou de rôles dans Supabase : c'est volontaire, afin de valider l'usage avant toute migration de la base.
+
+- Le RGRV est maintenant regroupé dans un module annuel dédié.
+- Les tâches utilisent une catégorie et une échéance avec date + heure sélectionnées.
+- Les Managers peuvent créer des tâches et des catégories dans l'aperçu. Le Store Manager peut attribuer les rôles Crew, Manager et 1er Assistant ; le 1er Assistant peut uniquement promouvoir un Crew en Manager.
+- En mode développement, le profil affiche un sélecteur **Aperçu local des droits**. Il ne modifie aucun compte réel.
+
+La version connectée nécessitera une migration Supabase, des actions serveur protégées et un journal privé des changements de rôle et de création de catégories.

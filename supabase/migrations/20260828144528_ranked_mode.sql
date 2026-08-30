@@ -1,5 +1,5 @@
 alter table public.crew_profiles
-  add column if not exists ranked_points integer not null default 100,
+  add column if not exists ranked_points integer not null default 0,
   add column if not exists ranked_matches integer not null default 0,
   add constraint crew_profiles_ranked_points_check check (ranked_points >= 0),
   add constraint crew_profiles_ranked_matches_check check (ranked_matches >= 0);

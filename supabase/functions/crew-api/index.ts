@@ -22,7 +22,7 @@ async function authenticate(body: Record<string, unknown>) {
 
 async function publicProfile(profile: Record<string, unknown>) {
   const { data } = await db.from('user_achievements').select('achievement_code').eq('profile_id', profile.id)
-  return { id: profile.id, username: profile.username, leaderboard_opt_in: profile.leaderboard_opt_in, xp: profile.xp, level: profile.level, best_official: profile.best_official, best_training: profile.best_training, total_attempts: profile.total_attempts, passed_finals: profile.passed_finals, perfect_runs: profile.perfect_runs, seen_official: profile.seen_official ?? [], ranked_points: profile.ranked_points, ranked_matches: profile.ranked_matches, achievements: (data ?? []).map((achievement) => achievement.achievement_code) }
+  return { id: profile.id, username: profile.username, role: profile.role ?? 'crew', can_debug_roles: Boolean(profile.can_debug_roles), leaderboard_opt_in: profile.leaderboard_opt_in, xp: profile.xp, level: profile.level, best_official: profile.best_official, best_training: profile.best_training, total_attempts: profile.total_attempts, passed_finals: profile.passed_finals, perfect_runs: profile.perfect_runs, seen_official: profile.seen_official ?? [], ranked_points: profile.ranked_points, ranked_matches: profile.ranked_matches, achievements: (data ?? []).map((achievement) => achievement.achievement_code) }
 }
 
 async function awardAchievements(profile: Record<string, any>) {
