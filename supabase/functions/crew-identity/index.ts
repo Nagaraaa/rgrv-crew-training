@@ -3,7 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },
 });
-const localOrigins = new Set(['http://localhost:5173']);
+const localOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174']);
 const isAllowedOrigin = (origin: string) => localOrigins.has(origin) || /^https:\/\/rgrv-crew-training(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin);
 const cors = (request: Request) => {
   const origin = request.headers.get('origin') ?? '';

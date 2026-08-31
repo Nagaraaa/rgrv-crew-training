@@ -4,7 +4,7 @@ type TeamRole = 'crew' | 'crew_trainer' | 'manager' | 'first_assistant' | 'store
 type CurrentProfile = { id: string; username: string; role: TeamRole; can_review_task_proposals: boolean }
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
-const allowedOrigin = (origin: string | null) => origin === 'http://localhost:5173' || /^https:\/\/rgrv-crew-training(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin ?? '')
+const allowedOrigin = (origin: string | null) => new Set(['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174']).has(origin ?? '') || /^https:\/\/rgrv-crew-training(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin ?? '')
 const taskManagers = new Set<TeamRole>(['manager', 'first_assistant', 'store_manager'])
 const manageableRoles = new Set<TeamRole>(['crew', 'crew_trainer', 'manager', 'first_assistant'])
 const canManageTasks = (current: CurrentProfile) => taskManagers.has(current.role)

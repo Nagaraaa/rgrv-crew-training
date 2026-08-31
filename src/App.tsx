@@ -7,9 +7,12 @@ import { TaskBoard } from "./features/operations/TaskBoard";
 import { Team } from "./features/operations/Team";
 import { roleLabel, type CrewRole } from "./features/operations/roles";
 import { RgrvHub } from "./features/rgrv/RgrvHub";
+import { RgrvObjectives } from "./features/rgrv/RgrvObjectives";
 import { crewApi, type CrewProfile } from "./lib/crewApi";
 import "./App.css";
 import "./task-composer.css";
+import "./rgrv-objectives.css";
+import "./landing-auth.css";
 
 type Screen = "home" | "rgrv" | "fiches" | "official" | "final" | "ranked" | "leaderboard" | "training" | "tasks" | "team" | "profile";
 type AuthMode = "register" | "login";
@@ -23,6 +26,42 @@ type IdentityProfile = {
 const identityUrl = import.meta.env.VITE_CREW_IDENTITY_URL as
   | string
   | undefined;
+const profileKey = "rgrv-profile";
+const profileIdKey = "rgrv-profile-id";
+const tokenKey = "rgrv-token";
+const rgrvTestDate = new Date(2026, 9, 2);
+
+function daysUntilRgrv() {
+  return Math.max(0, Math.ceil((rgrvTestDate.getTime() - Date.now()) / 86_400_000));
+}
+
+function savedProfile() {
+  for (const storage of [sessionStorage, localStorage]) {
+    try {
+      const saved = storage.getItem(profileKey);
+      if (saved) return JSON.parse(saved) as CrewProfile;
+    } catch {
+      storage.removeItem(profileKey);
+    }
+  }
+  return null;
+}
+
+function savedSession() {
+  return [sessionStorage, localStorage].some((storage) => Boolean(storage.getItem(profileIdKey) && storage.getItem(tokenKey)));
+}
+
+function sessionStorageForProfile() {
+  return localStorage.getItem(profileIdKey) && localStorage.getItem(tokenKey) ? localStorage : sessionStorage;
+}
+
+function clearStoredSession() {
+  for (const storage of [sessionStorage, localStorage]) {
+    storage.removeItem(profileKey);
+    storage.removeItem(profileIdKey);
+    storage.removeItem(tokenKey);
+  }
+}
 
 function Arches() {
   return (
@@ -38,6 +77,17 @@ function Arches() {
       />
     </svg>
   );
+}
+
+function RgrvCountdown() {
+  const [daysRemaining, setDaysRemaining] = useState(daysUntilRgrv);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setDaysRemaining(daysUntilRgrv()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return <p className="rgrv-countdown" aria-label={`Test RGRV le 2 octobre : ${daysRemaining === 0 ? "aujourd’hui" : `${daysRemaining} jours restants`}`}><span>Test RGRV</span><strong>{daysRemaining === 0 ? "Aujourd’hui" : `J-${daysRemaining}`}</strong><small>2 octobre</small></p>;
 }
 
 function fallbackProfile(identity: IdentityProfile): CrewProfile {
@@ -62,40 +112,37 @@ function fallbackProfile(identity: IdentityProfile): CrewProfile {
 }
 
 function App() {
-  const [screen, setScreen] = useState<Screen>("home");
-  const [profile, setProfile] = useState<CrewProfile | null>(() => {
-    try {
-      const saved = sessionStorage.getItem("rgrv-profile");
-      return saved ? (JSON.parse(saved) as CrewProfile) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [screen, setScreen] = useState<Screen>(() => savedProfile() ? "rgrv" : "home");
+  const [profile, setProfile] = useState<CrewProfile | null>(savedProfile);
   const [authOpen, setAuthOpen] = useState(false);
   const [previewRole, setPreviewRole] = useState<CrewRole | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("register");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [pin, setPin] = useState("");
+  const [rememberSession, setRememberSession] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const currentRole = profile ? (previewRole ?? profile.role ?? "crew") : "crew";
-  const canPreviewRoles = Boolean(profile && (import.meta.env.DEV || profile.can_debug_roles));
+  const activeProfile = profile;
+  const currentRole = activeProfile ? (previewRole ?? activeProfile.role ?? "crew") : "crew";
+  const canPreviewRoles = Boolean(activeProfile && (import.meta.env.DEV || activeProfile.can_debug_roles));
 
   function updateProfile(next: CrewProfile) {
-    sessionStorage.setItem("rgrv-profile", JSON.stringify(next));
+    sessionStorageForProfile().setItem(profileKey, JSON.stringify(next));
     setProfile(next);
   }
 
   useEffect(() => {
     if (
-      !sessionStorage.getItem("rgrv-profile-id") ||
-      !sessionStorage.getItem("rgrv-token")
+      !savedSession()
     )
       return;
     void crewApi
       .profile()
-      .then(({ profile: fresh }) => updateProfile(fresh))
+      .then(({ profile: fresh }) => {
+        sessionStorageForProfile().setItem(profileKey, JSON.stringify(fresh));
+        setProfile(fresh);
+      })
       .catch(() => undefined);
   }, []);
 
@@ -125,8 +172,10 @@ function App() {
       };
       if (!response.ok || !data.profile || !data.token)
         throw new Error(data.error ?? "Connexion impossible.");
-      sessionStorage.setItem("rgrv-profile-id", data.profile.id);
-      sessionStorage.setItem("rgrv-token", data.token);
+      clearStoredSession();
+      const storage = rememberSession ? localStorage : sessionStorage;
+      storage.setItem(profileIdKey, data.profile.id);
+      storage.setItem(tokenKey, data.token);
       let next = fallbackProfile(data.profile);
       try {
         next = (await crewApi.profile()).profile;
@@ -135,7 +184,7 @@ function App() {
       }
       updateProfile(next);
       setAuthOpen(false);
-      setScreen("home");
+      setScreen("rgrv");
       setPin("");
     } catch (error) {
       setMessage(
@@ -155,21 +204,19 @@ function App() {
     else requireProfile(destination);
   }
   function logout() {
-    sessionStorage.removeItem("rgrv-profile");
-    sessionStorage.removeItem("rgrv-profile-id");
-    sessionStorage.removeItem("rgrv-token");
+    clearStoredSession();
     setProfile(null);
     setPreviewRole(null);
     setScreen("home");
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
+    <main className={profile ? "app-shell is-authenticated" : "app-shell"}>
+      <header className={profile ? "topbar" : "topbar topbar--guest"}>
         <button
           className="brand"
           type="button"
-          onClick={() => setScreen("home")}
+          onClick={() => setScreen(profile ? "rgrv" : "home")}
         >
           <Arches />
           <span className="brand-copy">
@@ -179,10 +226,8 @@ function App() {
           <i className="brand-divider" aria-hidden="true" />
           <em className="brand-beta">Beta</em>
         </button>
-        <nav aria-label="Navigation principale">
-          <button className={screen === "home" ? "active" : ""} onClick={() => goTo("home")}>Accueil</button>
-          <button className={screen === "tasks" ? "active" : ""} onClick={() => goTo("tasks")}>Tâches</button>
-          <button className={screen === "rgrv" || ["fiches", "official", "final", "ranked", "leaderboard", "training"].includes(screen) ? "active" : ""} onClick={() => goTo("rgrv")}>RGRV</button>
+        {profile && <nav aria-label="Navigation principale">
+          <button className={screen === "home" || screen === "rgrv" || ["fiches", "official", "final", "ranked", "leaderboard", "training"].includes(screen) ? "active" : ""} onClick={() => goTo("rgrv")}>RGRV</button>
           <button className={screen === "team" ? "active" : ""} onClick={() => goTo("team")}>Équipe</button>
           <button
             className={screen === "profile" ? "active" : ""}
@@ -190,19 +235,16 @@ function App() {
           >
             Mon profil
           </button>
-        </nav>
-        {profile ? <button className="level" type="button" onClick={() => goTo("profile")}>{["rgrv", "fiches", "official", "final", "ranked", "leaderboard", "training"].includes(screen) ? `${roleLabel[currentRole]} · Niv. ${profile.level}` : `${profile.username} — ${roleLabel[currentRole]}`}</button> : <span className="topbar-spacer" aria-hidden="true" />}
+        </nav>}
+        {profile ? <button className="level" type="button" onClick={() => goTo("profile")}>{["rgrv", "fiches", "official", "final", "ranked", "leaderboard", "training"].includes(screen) ? `${roleLabel[currentRole]} · Niv. ${profile.level}` : `${profile.username} — ${roleLabel[currentRole]}`}</button> : screen !== "home" && <button className="topbar-login" type="button" onClick={() => { setAuthMode("login"); setMessage(""); setAuthOpen(true); }}>Se connecter</button>}
       </header>
 
-      {screen === "home" && (
-        <section className="home-page">
-          <div className="home-intro">
-            {profile ? <><h1>Bon retour, {profile.username.split(" ")[0]}.</h1><p className="lead">L’essentiel de l’équipe, au même endroit.</p></> : <><p className="eyebrow">Crew Hub</p><h1>Un espace simple pour l’équipe.</h1><p className="lead">Tâches du quotidien et module RGRV, sans se perdre dans les menus.</p><button className="primary hero-login" onClick={() => setAuthOpen(true)}>Se connecter <span>→</span></button></>}
+      {screen === "home" && !authOpen && (
+        <section className="home-page landing-page">
+          <div className="landing-hero">
+            <RgrvCountdown /><h1>TEST RGRV.</h1><p className="lead">Fiches, quiz et test final pour réviser.</p>
+            <div className="landing-actions"><button className="primary" onClick={() => { setAuthMode("login"); setMessage(""); setAuthOpen(true); }}>Se connecter <span>→</span></button><button className="landing-register" onClick={() => { setAuthMode("register"); setMessage(""); setAuthOpen(true); }}>Créer mon accès</button></div>
           </div>
-          {profile && <section className="hub-links">
-            <button type="button" onClick={() => goTo("tasks")}><span>Organisation</span><strong>Tâches</strong><small>Voir, prendre et terminer les actions de l’équipe.</small><b>Ouvrir →</b></button>
-            <button type="button" onClick={() => goTo("rgrv")}><span>Module annuel</span><strong>RGRV</strong><small>Prépare ton RGRV avec les fiches, quiz et modes d’entraînement.</small><b>Ouvrir →</b></button>
-          </section>}
         </section>
       )}
 
@@ -237,6 +279,7 @@ function App() {
               Partie{profile.ranked_matches > 1 ? "s" : ""} classée{profile.ranked_matches > 1 ? "s" : ""}
             </span>
           </div>
+          <RgrvObjectives profile={profile} />
           {canPreviewRoles && <section className="role-preview"><p className="eyebrow">Aperçu des droits</p><h2>Voir l’application comme…</h2><div>{(["crew", "crew_trainer", "manager", "first_assistant", "store_manager"] as CrewRole[]).map((role) => <button key={role} className={currentRole === role ? "active" : ""} type="button" onClick={() => setPreviewRole(role)}>{roleLabel[role]}</button>)}</div><small>Réservé au débogage : ce sélecteur ne modifie aucun compte ni droit Supabase.</small></section>}
           <button className="text-action" onClick={logout}>
             Se déconnecter sur cet appareil
@@ -244,43 +287,24 @@ function App() {
         </section>
       )}
 
-      <nav className="mobile-nav" aria-label="Navigation mobile">
-        <button className={screen === "home" ? "active" : ""} onClick={() => goTo("home")}><span>⌂</span>Accueil</button>
-        <button className={screen === "tasks" ? "active" : ""} onClick={() => goTo("tasks")}><span>✓</span>Tâches</button>
-        <button className={screen === "rgrv" || ["fiches", "official", "final", "ranked", "leaderboard", "training"].includes(screen) ? "active" : ""} onClick={() => goTo("rgrv")}><span>▤</span>RGRV</button>
+      {profile && <nav className="mobile-nav mobile-nav--three" aria-label="Navigation mobile">
+        <button className={screen === "home" || screen === "rgrv" || ["fiches", "official", "final", "ranked", "leaderboard", "training"].includes(screen) ? "active" : ""} onClick={() => goTo("rgrv")}><span>▤</span>RGRV</button>
         <button className={screen === "team" ? "active" : ""} onClick={() => goTo("team")}><span>♙</span>Équipe</button>
         <button className={screen === "profile" ? "active" : ""} onClick={() => goTo("profile")}><span>◉</span>Profil</button>
-      </nav>
+      </nav>}
 
       {authOpen && (
-        <div className="modal-layer" role="presentation">
-          <section
-            className="identity-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="identity-title"
-          >
-            <button
-              className="close"
-              onClick={() => setAuthOpen(false)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-            <Arches />
-            <p className="eyebrow">
-              {authMode === "register"
-                ? "Premier passage"
-                : "Content de te revoir"}
-            </p>
+        <section className="auth-page" aria-labelledby="identity-title">
+          <div className="auth-intro"><h1>Accède au RGRV.</h1><p>Retrouve ta progression sur cet appareil.</p></div>
+          <section className="identity-modal auth-card">
+            <button className="close" onClick={() => setAuthOpen(false)} aria-label="Retour à l’accueil">×</button>
             <h2 id="identity-title">
               {authMode === "register"
-                ? "Crée ton accès crew."
-                : "Ouvre ton parcours."}
+                ? "Créer mon accès."
+                : "Se connecter."}
             </h2>
             <p>
-              Prénom et nom identifient ton profil. Ton code à six chiffres est
-              personnel.
+              Prénom, nom et code personnel à 6 chiffres.
             </p>
             <form onSubmit={submitIdentity}>
               <label>
@@ -317,6 +341,11 @@ function App() {
                   required
                 />
               </label>
+              <label className="remember-session">
+                <input className="switch-input" type="checkbox" role="switch" checked={rememberSession} onChange={(event) => setRememberSession(event.target.checked)} />
+                <span className="switch-control" aria-hidden="true" />
+                <span><strong>Rester connecté sur cet appareil</strong><small>À activer uniquement sur ton téléphone personnel.</small></span>
+              </label>
               {message && (
                 <p className="error" role="alert">
                   {message}
@@ -342,10 +371,10 @@ function App() {
                 : "Créer mon premier profil"}
             </button>
           </section>
-        </div>
+        </section>
       )}
 
-      {screen === "home" && <footer className="site-footer">Pensé et créé pour l’équipe par <strong>Steve</strong></footer>}
+      {screen === "home" && !authOpen && <footer className="site-footer">Pensé et créé pour l’équipe par <strong>Steve</strong></footer>}
     </main>
   );
 }

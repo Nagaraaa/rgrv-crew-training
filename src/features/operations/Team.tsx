@@ -59,7 +59,9 @@ export function Team() {
     setCanEditEveryRole(feed.can_edit_every_role);
   }
 
-  useEffect(() => { void crewApi.team().then(applyFeed).catch((error) => setMessage(error instanceof Error ? error.message : "Équipe indisponible.")); }, []);
+  useEffect(() => {
+    void crewApi.team().then(applyFeed).catch((error) => setMessage(error instanceof Error ? error.message : "Équipe indisponible."));
+  }, []);
 
   function openAdd(nextRole: ManagedRole) {
     if (!canEditEveryRole && nextRole !== "manager") return;

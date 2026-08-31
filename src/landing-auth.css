@@ -1,0 +1,60 @@
+.landing-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.landing-hero { max-width: 680px; margin: 0 auto; text-align: center; }
+.rgrv-countdown { display: inline-flex; align-items: baseline; gap: 8px; margin: 0; color: #ffc72c; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.rgrv-countdown > span { display: none; }
+.rgrv-countdown strong { color: #f5f3e8; font-size: 17px; letter-spacing: 0; }
+.rgrv-countdown small { color: #b7c6b9; font-size: 10px; letter-spacing: .04em; }
+.landing-hero h1 { margin: 10px 0 16px; }
+.landing-hero .lead { max-width: 510px; margin-right: auto; margin-left: auto; }
+.landing-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 18px; margin-top: 30px; }
+.landing-actions .primary { margin: 0; }
+.landing-register { padding: 12px 2px; border: 0; background: transparent; color: #ffc72c; font: inherit; font-size: 14px; font-weight: 800; }
+
+.topbar-login { padding: 9px 14px; border: 1px solid #52715a; border-radius: 999px; background: rgba(9, 25, 15, .65); color: #ffc72c; font-size: 12px; font-weight: 900; }
+
+.rgrv-module-grid button.is-featured { grid-column: 1 / -1; min-height: 212px; border-left: 3px solid #ffc72c; background: linear-gradient(105deg, #16351f, #102217); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}
+
+.auth-page { flex: 1; width: min(1120px, 90vw); min-height: 0; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(350px, .7fr); align-items: center; gap: clamp(35px, 9vw, 132px); padding: 32px 0; }
+.auth-intro { max-width: 560px; }
+.auth-intro h1 { margin: 9px 0 17px; font-size: clamp(44px, 6vw, 76px); line-height: .96; }
+.auth-intro > p:not(.eyebrow) { max-width: 410px; color: #c6d0c7; font-size: 16px; line-height: 1.55; }
+.auth-card { width: 100%; }
+.remember-session { display: flex !important; align-items: center; gap: 11px !important; padding: 12px; border: 1px solid #3d5d46; border-radius: 7px; background: rgba(6, 19, 11, .48); font-weight: 400 !important; cursor: pointer; }
+.switch-input { position: absolute; width: 1px !important; height: 1px !important; margin: -1px !important; padding: 0 !important; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0 !important; }
+.switch-control { position: relative; display: block; width: 39px; height: 23px; flex: 0 0 auto; border: 1px solid #66806b; border-radius: 999px; background: #0a160d; transition: background .18s ease, border-color .18s ease; }
+.switch-control::after { position: absolute; top: 3px; left: 3px; width: 15px; height: 15px; border-radius: 50%; background: #c6d0c7; content: ""; transition: transform .18s ease, background .18s ease; }
+.switch-input:checked + .switch-control { border-color: #ffc72c; background: #b78e15; }
+.switch-input:checked + .switch-control::after { transform: translateX(16px); background: #fff7db; }
+.switch-input:focus-visible + .switch-control { outline: 2px solid #f5f3e8; outline-offset: 3px; }
+.remember-session > span:last-child { display: grid; gap: 3px; }
+.remember-session strong { color: #f5f3e8; font-size: 12px; }
+.remember-session small { color: #aab9ad; font-size: 11px; font-weight: 500; line-height: 1.35; }
+
+@media (max-width: 760px) {
+  .landing-page, .auth-page { width: min(100% - 40px, 540px); grid-template-columns: 1fr; gap: 34px; padding: 0; }
+  .landing-page { min-height: 0; }
+  .auth-page { min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .landing-hero h1 { font-size: clamp(47px, 14vw, 62px); }
+  .landing-actions { display: grid; align-items: stretch; gap: 8px; }
+  .landing-actions .primary { width: 100%; justify-content: center; }
+  .landing-register { text-align: center; }
+  .auth-intro { display: none; }
+  .auth-card { max-height: calc(100dvh - 92px); margin: 0; overflow-y: auto; padding: 22px 20px; }
+  .identity-modal h2 { margin: 4px 0 8px; font-size: 27px; }
+  .identity-modal > p:not(.eyebrow) { margin: 0; font-size: 13px; }
+  .identity-modal form { gap: 10px; margin-top: 16px; }
+  .identity-modal input { padding: 10px; }
+  .remember-session { padding: 10px; }
+  .switch-mode { margin-top: 12px; }
+}

@@ -7,3 +7,9 @@
 .task-sheet input:focus {
   scroll-margin-block: 24px;
 }
+
+@media (max-width: 760px) {
+  .mobile-nav.mobile-nav--three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

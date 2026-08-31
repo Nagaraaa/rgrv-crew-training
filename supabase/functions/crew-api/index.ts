@@ -2,7 +2,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { FINAL_IDS, OFFICIAL, TRAINING } from './answers.ts'
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
-const allowedOrigin = (origin: string | null) => origin === 'http://localhost:5173' || /^https:\/\/rgrv-crew-training(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin ?? '')
+const allowedOrigin = (origin: string | null) => new Set(['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174']).has(origin ?? '') || /^https:\/\/rgrv-crew-training(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin ?? '')
 
 function headers(origin: string | null) {
   return { 'Access-Control-Allow-Origin': origin && allowedOrigin(origin) ? origin : 'null', 'Access-Control-Allow-Headers': 'content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', Vary: 'Origin', 'Content-Type': 'application/json; charset=utf-8' }

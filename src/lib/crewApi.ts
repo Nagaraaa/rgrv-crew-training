@@ -27,9 +27,12 @@ const apiUrl = import.meta.env.VITE_CREW_API_URL as string | undefined
 const operationsUrl = apiUrl?.replace(/\/crew-api$/, '/crew-operations')
 
 function session(): Session | null {
-  const profileId = sessionStorage.getItem('rgrv-profile-id')
-  const token = sessionStorage.getItem('rgrv-token')
-  return profileId && token ? { profileId, token } : null
+  for (const storage of [sessionStorage, localStorage]) {
+    const profileId = storage.getItem('rgrv-profile-id')
+    const token = storage.getItem('rgrv-token')
+    if (profileId && token) return { profileId, token }
+  }
+  return null
 }
 
 async function call<T>(action: string, payload: Record<string, unknown> = {}): Promise<T> {
