@@ -94,7 +94,18 @@ function RgrvCountdown() {
 function SiteFooter({ onNavigate }: { onNavigate: (screen: LegalPage) => void }) {
   return (
     <footer className="site-footer">
-      <span>Pensé et créé pour l’équipe par <strong>Steve</strong></span>
+      <span>
+        Pensé et créé pour l’équipe par{" "}
+        <a
+          className="footer-github"
+          href="https://github.com/Nagaraaa"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Voir le GitHub de Steve, ouverture dans un nouvel onglet"
+        >
+          Steve
+        </a>
+      </span>
       <nav aria-label="Informations légales">
         <button type="button" onClick={() => onNavigate("privacy")}>Vie privée</button>
         <button type="button" onClick={() => onNavigate("legal")}>Mentions légales</button>
