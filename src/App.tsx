@@ -30,12 +30,6 @@ const identityUrl = import.meta.env.VITE_CREW_IDENTITY_URL as
 const profileKey = "rgrv-profile";
 const profileIdKey = "rgrv-profile-id";
 const tokenKey = "rgrv-token";
-const rgrvTestDate = new Date(2026, 9, 2);
-
-function daysUntilRgrv() {
-  return Math.max(0, Math.ceil((rgrvTestDate.getTime() - Date.now()) / 86_400_000));
-}
-
 function savedProfile() {
   for (const storage of [sessionStorage, localStorage]) {
     try {
@@ -78,17 +72,6 @@ function Arches() {
       />
     </svg>
   );
-}
-
-function RgrvCountdown() {
-  const [daysRemaining, setDaysRemaining] = useState(daysUntilRgrv);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setDaysRemaining(daysUntilRgrv()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return <p className="rgrv-countdown" aria-label={`Test RGRV le 2 octobre : ${daysRemaining === 0 ? "aujourd’hui" : `${daysRemaining} jours restants`}`}><span>Test RGRV</span><strong>{daysRemaining === 0 ? "Aujourd’hui" : `J-${daysRemaining}`}</strong><small>2 octobre</small></p>;
 }
 
 function SiteFooter({ onNavigate }: { onNavigate: (screen: LegalPage) => void }) {
@@ -267,7 +250,7 @@ function App() {
       {screen === "home" && !authOpen && (
         <section className="home-page landing-page">
           <div className="landing-hero">
-            <RgrvCountdown /><h1>TEST RGRV.</h1><p className="lead">Fiches, quiz et test final pour réviser.</p>
+            <h1>TEST RGRV.</h1><p className="lead">Fiches, quiz et test final pour réviser.</p>
             <div className="landing-actions"><button className="primary" onClick={() => { setAuthMode("login"); setMessage(""); setAuthOpen(true); }}>Se connecter <span>→</span></button><button className="landing-register" onClick={() => { setAuthMode("register"); setMessage(""); setAuthOpen(true); }}>Créer mon accès</button></div>
           </div>
         </section>
