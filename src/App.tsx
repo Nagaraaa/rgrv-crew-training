@@ -6,6 +6,7 @@ import { TrainingMode } from "./features/training/TrainingMode";
 import { TaskBoard } from "./features/operations/TaskBoard";
 import { Team } from "./features/operations/Team";
 import { roleLabel, type CrewRole } from "./features/operations/roles";
+import { LegalInfo, type LegalPage } from "./features/legal/LegalInfo";
 import { RgrvHub } from "./features/rgrv/RgrvHub";
 import { RgrvObjectives } from "./features/rgrv/RgrvObjectives";
 import { crewApi, type CrewProfile } from "./lib/crewApi";
@@ -14,7 +15,7 @@ import "./task-composer.css";
 import "./rgrv-objectives.css";
 import "./landing-auth.css";
 
-type Screen = "home" | "rgrv" | "fiches" | "official" | "final" | "ranked" | "leaderboard" | "training" | "tasks" | "team" | "profile";
+type Screen = "home" | "rgrv" | "fiches" | "official" | "final" | "ranked" | "leaderboard" | "training" | "tasks" | "team" | "profile" | LegalPage;
 type AuthMode = "register" | "login";
 type IdentityProfile = {
   id: string;
@@ -88,6 +89,19 @@ function RgrvCountdown() {
   }, []);
 
   return <p className="rgrv-countdown" aria-label={`Test RGRV le 2 octobre : ${daysRemaining === 0 ? "aujourd’hui" : `${daysRemaining} jours restants`}`}><span>Test RGRV</span><strong>{daysRemaining === 0 ? "Aujourd’hui" : `J-${daysRemaining}`}</strong><small>2 octobre</small></p>;
+}
+
+function SiteFooter({ onNavigate }: { onNavigate: (screen: LegalPage) => void }) {
+  return (
+    <footer className="site-footer">
+      <span>Pensé et créé pour l’équipe par <strong>Steve</strong></span>
+      <nav aria-label="Informations légales">
+        <button type="button" onClick={() => onNavigate("privacy")}>Vie privée</button>
+        <button type="button" onClick={() => onNavigate("legal")}>Mentions légales</button>
+        <button type="button" onClick={() => onNavigate("contact")}>Contact</button>
+      </nav>
+    </footer>
+  );
 }
 
 function fallbackProfile(identity: IdentityProfile): CrewProfile {
@@ -200,7 +214,7 @@ function App() {
     else setAuthOpen(true);
   }
   function goTo(destination: Screen) {
-    if (destination === "home") setScreen(destination);
+    if (["home", "privacy", "legal", "contact"].includes(destination)) setScreen(destination);
     else requireProfile(destination);
   }
   function logout() {
@@ -246,6 +260,10 @@ function App() {
             <div className="landing-actions"><button className="primary" onClick={() => { setAuthMode("login"); setMessage(""); setAuthOpen(true); }}>Se connecter <span>→</span></button><button className="landing-register" onClick={() => { setAuthMode("register"); setMessage(""); setAuthOpen(true); }}>Créer mon accès</button></div>
           </div>
         </section>
+      )}
+
+      {(["privacy", "legal", "contact"] as LegalPage[]).includes(screen as LegalPage) && (
+        <LegalInfo page={screen as LegalPage} onBack={() => setScreen(profile ? "rgrv" : "home")} />
       )}
 
       {screen === "rgrv" && profile && <RgrvHub onNavigate={goTo} />}
@@ -374,7 +392,11 @@ function App() {
         </section>
       )}
 
-      {screen === "home" && !authOpen && <footer className="site-footer">Pensé et créé pour l’équipe par <strong>Steve</strong></footer>}
+      <SiteFooter onNavigate={(destination) => {
+        setAuthOpen(false);
+        setScreen(destination);
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }} />
     </main>
   );
 }
