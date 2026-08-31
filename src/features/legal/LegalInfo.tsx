@@ -38,10 +38,11 @@ export function LegalInfo({ page, onBack }: LegalInfoProps) {
         <h1>Mentions légales.</h1>
         <div className="legal-stack">
           <section className="legal-panel">
-            <h2>Édition</h2>
+            <h2>Édition et usage interne</h2>
             <p>
-              Crew Hub Waterloo est une initiative locale en phase bêta, conçue
-              et administrée par Steve Herremans.
+              Crew Hub Waterloo est un outil interne de préparation RGRV pour
+              l’équipe de Waterloo, autorisé par le Store Manager et les
+              consultants. Il est conçu et administré par Steve Herremans.
             </p>
             <address>
               Contact : <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
@@ -63,11 +64,12 @@ export function LegalInfo({ page, onBack }: LegalInfoProps) {
             </p>
           </section>
           <section className="legal-panel legal-panel--note">
-            <h2>Avant une diffusion générale</h2>
+            <h2>Cadre de l’outil</h2>
             <p>
-              Si le restaurant ou la franchise adopte officiellement l’outil, ces
-              informations devront être complétées avec son identité, le
-              responsable des données et le cadre d’utilisation validé.
+              L’application est partagée dans le cadre de la préparation RGRV et
+              de la communication interne de l’équipe. Toute utilisation dans un
+              autre restaurant ou toute nouvelle finalité devra être validée avant
+              d’être ajoutée.
             </p>
           </section>
         </div>
@@ -84,7 +86,7 @@ export function LegalInfo({ page, onBack }: LegalInfoProps) {
       <h1>Vie privée.</h1>
       <p className="lead">
         Cette information explique simplement les données utilisées par Crew Hub
-        Waterloo pendant sa phase bêta RGRV.
+        Waterloo pour la préparation RGRV de l’équipe.
       </p>
       <div className="legal-stack">
         <section className="legal-panel">
@@ -104,22 +106,23 @@ export function LegalInfo({ page, onBack }: LegalInfoProps) {
             l’évaluation individuelle au travail.
           </p>
         </section>
-        <section className="legal-panel">
-          <h2>Accès et hébergement</h2>
-          <p>
-            Les données sont accessibles aux administrateurs autorisés de l’outil.
-            L’interface est hébergée chez Vercel et la base de données chez
-            Supabase.
-          </p>
+          <section className="legal-panel">
+            <h2>Accès et hébergement</h2>
+            <p>
+              Les données sont accessibles aux administrateurs autorisés de l’outil.
+              L’interface est hébergée chez Vercel et la base de données chez
+              Supabase. Steve Herremans est le contact opérationnel pour les
+              demandes liées à l’application.
+            </p>
         </section>
         <section className="legal-panel">
           <h2>Durée et tes droits</h2>
           <p>
-            Les données sont conservées pendant la phase bêta RGRV. Une durée de
-            conservation précise et une procédure de suppression devront être
-            validées avec la direction avant une diffusion générale. Tu peux
-            demander l’accès, la correction ou la suppression de tes données en
-            écrivant à <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.
+            Les données sont conservées pour la campagne RGRV 2026, puis font
+            l’objet d’un bilan de conservation ou de suppression avant toute
+            nouvelle campagne. Tu peux demander l’accès, la correction ou la
+            suppression de tes données en écrivant à{" "}
+            <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.
           </p>
         </section>
       </div>
