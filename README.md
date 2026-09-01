@@ -120,7 +120,7 @@ supabase/
 
 `tools/admin_accounts.py` est un outil de lecture seule : il affiche les profils et statistiques sans révéler les PIN ou les jetons.
 
-1. Créer `tools/.env.admin.local` avec `SUPABASE_URL` et `SUPABASE_SECRET_KEY`.
+1. Créer `.env.admin.local` à la racine du projet avec `SUPABASE_URL` et `SUPABASE_SECRET_KEY`.
 2. Lancer `tools/voir-comptes.cmd`, ou `py tools/admin_accounts.py`.
 3. Ajouter `--json` si une sortie exploitable est nécessaire.
 
