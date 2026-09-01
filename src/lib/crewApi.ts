@@ -62,8 +62,9 @@ async function callOperations<T>(action: string, payload: Record<string, unknown
 export const crewApi = {
   profile: () => call<{ profile: CrewProfile }>('profile'),
   markSeen: (index: number) => call<{ seen_official: number[] }>('mark_seen', { index }),
-  submitAttempt: (mode: 'official' | 'training_plus' | 'final' | 'ranked', answers: { id: string; answer: string }[]) =>
-    call<{ score: number; xp_awarded: number; xp_capped: boolean; ranked_delta?: number; ranked_points?: number; profile: ProgressProfile }>('submit_attempt', { mode, answers }),
+  startRound: (mode: 'official' | 'ranked') => call<{ round_token: string; question_ids: string[] }>('start_round', { mode }),
+  submitAttempt: (mode: 'official' | 'training_plus' | 'final' | 'ranked', answers: { id: string; answer: string }[], roundToken?: string) =>
+    call<{ score: number; xp_awarded: number; xp_capped: boolean; ranked_delta?: number; ranked_points?: number; profile: ProgressProfile }>('submit_attempt', { mode, answers, ...(roundToken ? { round_token: roundToken } : {}) }),
   leaderboard: () => call<{ leaderboard: LeaderboardRow[] }>('leaderboard'),
   updateProfile: (leaderboardOptIn: boolean) => call<{ profile: CrewProfile }>('update_profile', { leaderboard_opt_in: leaderboardOptIn }),
   operations: () => callOperations<OperationsFeed>('operations'),

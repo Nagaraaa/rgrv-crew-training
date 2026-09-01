@@ -24,8 +24,6 @@ function localDate() {
   return now.toISOString().slice(0, 10);
 }
 
-const today = localDate();
-
 const initialCategories: TaskCategory[] = [
   { id: "cleaning", name: "Nettoyage", createdByPrivate: "Système" },
   { id: "monitoring", name: "Surveillance", createdByPrivate: "Système" },
@@ -69,6 +67,7 @@ export function TaskBoard({ actorName, role }: { actorName: string; role: CrewRo
   const [completionNote, setCompletionNote] = useState("");
   const [thankYou, setThankYou] = useState<string | null>(null);
   const [syncError, setSyncError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [formError, setFormError] = useState("");
   const [savingTask, setSavingTask] = useState(false);
   const [savingCategory, setSavingCategory] = useState(false);
@@ -97,12 +96,17 @@ export function TaskBoard({ actorName, role }: { actorName: string; role: CrewRo
     setCanReviewProposals(feed.can_review_proposals);
   }
 
-  useEffect(() => { void crewApi.operations().then(applyFeed).catch((error) => setSyncError(error instanceof Error ? error.message : "Synchronisation indisponible.")); }, []);
+  useEffect(() => {
+    void crewApi.operations()
+      .then(applyFeed)
+      .catch((error) => setSyncError(error instanceof Error ? error.message : "Synchronisation indisponible."))
+      .finally(() => setLoading(false));
+  }, []);
 
   const visibleTasks = useMemo(() => tasks.filter((task) => task.status === tab && (!["pending", "rejected"].includes(task.status) || canReview || task.createdBy === actorName)), [actorName, canReview, tab, tasks]);
   const availableStatuses = taskStatuses.filter((status) => !["pending", "rejected"].includes(status) || canReview || tasks.some((task) => task.status === status && task.createdBy === actorName));
   const completedToday = tasks.filter(
-    (task) => task.status === "done" && task.completedAt?.slice(0, 10) === today,
+    (task) => task.status === "done" && task.completedAt?.slice(0, 10) === localDate(),
   ).length;
 
   function categoryName(id: string) {
@@ -207,7 +211,9 @@ export function TaskBoard({ actorName, role }: { actorName: string; role: CrewRo
 
       <div className="task-list">
         {syncError && <p className="error" role="alert">{syncError}</p>}
-        {visibleTasks.length === 0 ? (
+        {loading ? (
+          <p className="task-empty" role="status">Chargement des tâches…</p>
+        ) : visibleTasks.length === 0 ? (
           <p className="task-empty">Aucune tâche dans cette section.</p>
         ) : (
           visibleTasks.map((task) => (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { crewApi, type CrewProfile } from '../../lib/crewApi'
 import type { Question } from './questions'
 
@@ -23,19 +23,55 @@ function shuffle<T>(items: T[]) {
 }
 
 export function Quiz({ title, questions, questionCount, mode, onProfileUpdated, onOpenLeaderboard }: Props) {
-  const [roundQuestions, setRoundQuestions] = useState(() => shuffle(questions).slice(0, questionCount))
+  const requiresServerRound = mode === 'official' || mode === 'ranked'
+  const [roundQuestions, setRoundQuestions] = useState<Question[]>(() => requiresServerRound ? [] : shuffle(questions).slice(0, questionCount))
+  const [roundToken, setRoundToken] = useState<string | null>(null)
+  const [roundLoading, setRoundLoading] = useState(requiresServerRound)
+  const [roundError, setRoundError] = useState('')
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ score: number; xp: number; capped: boolean; rankedDelta?: number; rankedPoints?: number } | null>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const current = roundQuestions[index]
-  const options = useMemo(() => shuffle([current.correct, ...current.wrong]), [current])
+  const options = useMemo(() => current ? shuffle([current.correct, ...current.wrong]) : [], [current])
+
+  const loadRound = useCallback(async () => {
+    if (!requiresServerRound) {
+      setRoundQuestions(shuffle(questions).slice(0, questionCount))
+      setRoundToken(null)
+      setRoundLoading(false)
+      return
+    }
+    setRoundLoading(true)
+    setRoundError('')
+    try {
+      const response = await crewApi.startRound(mode)
+      const questionById = new Map(questions.map((question) => [question.id, question]))
+      const selectedQuestions = response.question_ids.map((id) => questionById.get(id))
+      if (selectedQuestions.length !== questionCount || selectedQuestions.some((question) => !question)) throw new Error('La série de questions est indisponible.')
+      setRoundQuestions(selectedQuestions as Question[])
+      setRoundToken(response.round_token)
+      setIndex(0)
+      setSelected(null)
+      setAnswers({})
+    } catch (error) {
+      setRoundError(error instanceof Error ? error.message : 'Impossible de préparer la partie.')
+    } finally {
+      setRoundLoading(false)
+    }
+  }, [mode, questions, questionCount, requiresServerRound])
+
+  useEffect(() => {
+    if (!requiresServerRound) return
+    const timer = window.setTimeout(() => { void loadRound() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadRound, requiresServerRound])
 
   async function finish() {
     setSubmitting(true)
     try {
-      const response = await crewApi.submitAttempt(mode, roundQuestions.map((question) => ({ id: question.id, answer: answers[question.id] })))
+      const response = await crewApi.submitAttempt(mode, roundQuestions.map((question) => ({ id: question.id, answer: answers[question.id] })), roundToken ?? undefined)
       const fresh = await crewApi.profile()
       onProfileUpdated(fresh.profile)
       setResult({ score: response.score, xp: response.xp_awarded, capped: response.xp_capped, rankedDelta: response.ranked_delta, rankedPoints: response.ranked_points })
@@ -57,11 +93,13 @@ export function Quiz({ title, questions, questionCount, mode, onProfileUpdated, 
   }
 
   function restart() {
-    setRoundQuestions(shuffle(questions).slice(0, questionCount))
-    setIndex(0); setSelected(null); setAnswers({}); setResult(null)
+    setResult(null)
+    void loadRound()
   }
 
-  if (result) return <section className="result-panel"><p className="eyebrow">{title}</p><div className="score-number">{result.score}%</div><h2>{result.rankedDelta === undefined ? result.score >= 80 ? 'Très solide.' : result.score >= 60 ? 'Bonne base.' : 'Encore un tour.' : result.rankedDelta > 0 ? 'Tu montes.' : result.rankedDelta < 0 ? 'Tu redescends.' : 'Tu restes stable.'}</h2>{result.rankedDelta !== undefined && <p className={result.rankedDelta > 0 ? 'ranked-result up' : result.rankedDelta < 0 ? 'ranked-result down' : 'ranked-result'}><b>{result.rankedDelta > 0 ? `+${result.rankedDelta}` : result.rankedDelta} points classés</b><span>{result.rankedPoints} points au total</span></p>}<p>{result.xp ? `+${result.xp} XP ajoutés à ton profil.` : 'La limite quotidienne d’XP est atteinte.'}{result.capped ? ' La limite quotidienne d’XP est atteinte.' : ''}</p><div className="result-actions"><button className="primary" onClick={restart}>Rejouer <span>→</span></button>{result.rankedDelta !== undefined && onOpenLeaderboard && <button className="text-action" type="button" onClick={onOpenLeaderboard}>Voir le classement →</button>}</div></section>
+  if (result) return <section className="result-panel"><p className="eyebrow">{title}</p><div className="score-number">{result.score}%</div><h2>{result.rankedDelta === undefined ? result.score >= 80 ? 'Très solide.' : result.score >= 60 ? 'Bonne base.' : 'Encore un tour.' : result.rankedDelta > 0 ? 'Tu montes.' : result.rankedDelta < 0 ? 'Tu redescends.' : 'Tu restes stable.'}</h2>{result.rankedDelta !== undefined && <p className={result.rankedDelta > 0 ? 'ranked-result up' : result.rankedDelta < 0 ? 'ranked-result down' : 'ranked-result'}><b>{result.rankedDelta > 0 ? `+${result.rankedDelta}` : result.rankedDelta} points classés</b><span>{result.rankedPoints} points au total</span></p>}<p>{result.capped ? 'La limite quotidienne d’XP est atteinte.' : result.xp ? `+${result.xp} XP ajoutés à ton profil.` : 'Aucune XP ajoutée pour cette partie.'}</p><div className="result-actions"><button className="primary" onClick={restart}>Rejouer <span>→</span></button>{result.rankedDelta !== undefined && onOpenLeaderboard && <button className="text-action" type="button" onClick={onOpenLeaderboard}>Voir le classement →</button>}</div></section>
+
+  if (roundLoading || !current) return <section className="quiz-panel"><p className="eyebrow">{title}</p><h2>{roundError || 'Préparation de la partie…'}</h2>{roundError && <button className="primary" type="button" onClick={() => void loadRound()}>Réessayer <span>→</span></button>}</section>
 
   return <section className="quiz-panel">
     <div className="quiz-meta"><span>{title}</span><span>{index + 1} / {roundQuestions.length}</span></div>

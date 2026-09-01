@@ -33,8 +33,13 @@ const tokenKey = "rgrv-token";
 function savedProfile() {
   for (const storage of [sessionStorage, localStorage]) {
     try {
+      const profileId = storage.getItem(profileIdKey);
+      const token = storage.getItem(tokenKey);
       const saved = storage.getItem(profileKey);
-      if (saved) return JSON.parse(saved) as CrewProfile;
+      if (!profileId || !token || !saved) continue;
+      const profile = JSON.parse(saved) as Partial<CrewProfile>;
+      if (profile.id === profileId && typeof profile.username === "string" && ["crew", "crew_trainer", "manager", "first_assistant", "store_manager"].includes(profile.role as string)) return profile as CrewProfile;
+      storage.removeItem(profileKey);
     } catch {
       storage.removeItem(profileKey);
     }
@@ -131,6 +136,7 @@ function App() {
   const [rememberSession, setRememberSession] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [leaderboardSaving, setLeaderboardSaving] = useState(false);
   const activeProfile = profile;
   const currentRole = activeProfile ? (previewRole ?? activeProfile.role ?? "crew") : "crew";
   const canPreviewRoles = Boolean(activeProfile && (import.meta.env.DEV || activeProfile.can_debug_roles));
@@ -151,7 +157,13 @@ function App() {
         sessionStorageForProfile().setItem(profileKey, JSON.stringify(fresh));
         setProfile(fresh);
       })
-      .catch(() => undefined);
+      .catch((error) => {
+        if (error instanceof Error && error.message === "Session invalide.") {
+          clearStoredSession();
+          setProfile(null);
+          setScreen("home");
+        }
+      });
   }, []);
 
   async function submitIdentity(event: FormEvent<HTMLFormElement>) {
@@ -216,6 +228,18 @@ function App() {
     setProfile(null);
     setPreviewRole(null);
     setScreen("home");
+  }
+
+  async function setLeaderboardVisibility(visible: boolean) {
+    setLeaderboardSaving(true);
+    try {
+      const response = await crewApi.updateProfile(visible);
+      updateProfile(response.profile);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Préférence impossible à enregistrer.");
+    } finally {
+      setLeaderboardSaving(false);
+    }
   }
 
   return (
@@ -292,6 +316,18 @@ function App() {
             </span>
           </div>
           <RgrvObjectives profile={profile} />
+          <section className="profile-privacy" aria-labelledby="leaderboard-visibility-title">
+            <div>
+              <p className="eyebrow">Classement</p>
+              <h2 id="leaderboard-visibility-title">Partager mon score avec l’équipe</h2>
+              <p>Ton nom et tes points apparaissent uniquement si tu actives cette option.</p>
+            </div>
+            <label className="remember-session">
+              <input className="switch-input" type="checkbox" role="switch" checked={profile.leaderboard_opt_in} disabled={leaderboardSaving} onChange={(event) => void setLeaderboardVisibility(event.target.checked)} />
+              <span className="switch-control" aria-hidden="true" />
+              <span><strong>{profile.leaderboard_opt_in ? "Visible dans le classement" : "Masqué du classement"}</strong><small>{leaderboardSaving ? "Enregistrement…" : "Tu peux changer ce choix à tout moment."}</small></span>
+            </label>
+          </section>
           {canPreviewRoles && <section className="role-preview"><p className="eyebrow">Aperçu des droits</p><h2>Voir l’application comme…</h2><div>{(["crew", "crew_trainer", "manager", "first_assistant", "store_manager"] as CrewRole[]).map((role) => <button key={role} className={currentRole === role ? "active" : ""} type="button" onClick={() => setPreviewRole(role)}>{roleLabel[role]}</button>)}</div><small>Réservé au débogage : ce sélecteur ne modifie aucun compte ni droit Supabase.</small></section>}
           <button className="text-action" onClick={logout}>
             Se déconnecter sur cet appareil
