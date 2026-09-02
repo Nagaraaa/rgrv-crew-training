@@ -56,6 +56,17 @@ export function Quiz({ title, questions, questionCount, mode, onProfileUpdated, 
       setSelected(null)
       setAnswers({})
     } catch (error) {
+      // Keep the existing ranked flow usable while an older deployed Edge
+      // Function is catching up with the web deployment. That API does not
+      // know the start_round action and still accepts locally selected rounds.
+      if (error instanceof Error && error.message === 'Action inconnue.') {
+        setRoundQuestions(shuffle(questions).slice(0, questionCount))
+        setRoundToken(null)
+        setIndex(0)
+        setSelected(null)
+        setAnswers({})
+        return
+      }
       setRoundError(error instanceof Error ? error.message : 'Impossible de préparer la partie.')
     } finally {
       setRoundLoading(false)
